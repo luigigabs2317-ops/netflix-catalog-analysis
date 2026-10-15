@@ -1,0 +1,55 @@
+// ============================================================
+// Tabela de calendário (Modelagem > Nova tabela)
+// Marque como tabela de datas e relacione Calendario[Date] -> titles[date_added]
+// ============================================================
+Calendario =
+ADDCOLUMNS (
+    CALENDAR ( DATE ( YEAR ( MIN ( titles[date_added] ) ), 1, 1 ),
+               DATE ( YEAR ( MAX ( titles[date_added] ) ), 12, 31 ) ),
+    "Ano", YEAR ( [Date] ),
+    "Mes", MONTH ( [Date] ),
+    "Mes Nome", FORMAT ( [Date], "mmm" )
+)
+
+// ============================================================
+// Medidas (crie em uma tabela vazia chamada "_Medidas")
+// ============================================================
+Total Títulos = DISTINCTCOUNT ( titles[show_id] )
+
+Total Filmes =
+CALCULATE ( [Total Títulos], titles[type] = "Movie" )
+
+Total Séries =
+CALCULATE ( [Total Títulos], titles[type] = "TV Show" )
+
+% Filmes = DIVIDE ( [Total Filmes], [Total Títulos] )
+
+% Séries = DIVIDE ( [Total Séries], [Total Títulos] )
+
+Total Países = DISTINCTCOUNT ( countries[country] )
+
+Total Gêneros = DISTINCTCOUNT ( genres[genre] )
+
+// Comparação com o ano anterior (por data de entrada no catálogo)
+Títulos Ano Anterior =
+CALCULATE ( [Total Títulos], SAMEPERIODLASTYEAR ( Calendario[Date] ) )
+
+Crescimento YoY =
+DIVIDE ( [Total Títulos] - [Títulos Ano Anterior], [Títulos Ano Anterior] )
+
+Duração Média Filmes (min) =
+CALCULATE ( AVERAGE ( titles[duration_value] ), titles[duration_unit] = "min" )
+
+Temporadas Médias Séries =
+CALCULATE ( AVERAGE ( titles[duration_value] ), titles[duration_unit] = "season" )
+
+Intervalo Médio Lançamento-Adição (anos) =
+CALCULATE ( AVERAGE ( titles[release_gap] ), titles[release_gap] >= 0 )
+
+// Participação no total, ignorando filtros de país (para gráficos por país)
+% do Catálogo =
+DIVIDE ( [Total Títulos], CALCULATE ( [Total Títulos], ALL ( countries ) ) )
+
+// Ranking de países pelo total de títulos
+Ranking País =
+RANKX ( ALLSELECTED ( countries[country] ), [Total Títulos], , DESC, DENSE )
